@@ -1,6 +1,8 @@
 #include "MQTT.h"
 #include "application.h"
 
+SYSTEM_MODE(SEMI_AUTOMATIC);
+
 void callback(char* topic, byte* payload, unsigned int length);
 
 /**
@@ -10,14 +12,14 @@ void callback(char* topic, byte* payload, unsigned int length);
  * want to use domain name,
  * MQTT client(www.sample.com, 1883, callback);
  **/
-byte server[] = { 192,168,1,99 };
+byte server[] = { 192,168,1,131 };
 MQTT client(server, 1883, callback);
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
     char p[length + 1];
     memcpy(p, payload, length);
-    p[length] = NULL;
+    p[length] = '\0';
     String message(p);
 
     if (message.equals("RED"))    
@@ -36,6 +38,9 @@ void setup() {
     pinMode(D7, OUTPUT);
     RGB.control(true);
     
+    WiFi.on();
+    WiFi.connect();
+
     // connect to the server
     client.connect("sparkclient");
 
