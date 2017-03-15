@@ -17,6 +17,7 @@ byte server[] = { 192,168,1,131 };
 MQTT client(server, 1883, callback);
 
 Weather sensor;
+unsigned long start, end;
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -39,6 +40,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
     delay(1000);
 }
 
+void connect() {
+    if(!client.isConnected()) {
+	digitalWrite(D7, HIGH);
+	client.connect("sparkclient");
+	client.subscribe("inTopic/message");
+    }
+}
 
 void setup() {
     pinMode(D7, OUTPUT);
@@ -46,35 +54,35 @@ void setup() {
     
     WiFi.on();
     WiFi.connect();
-
-    // connect to the server
-    client.connect("sparkclient");
-
-    // publish/subscribe
-    if (client.isConnected()) {
-        client.subscribe("inTopic/message");
-    }
+	
+    connect();
 
     sensor.begin();
     sensor.setModeBarometer();
     sensor.setOversampleRate(7);
     sensor.enableEventFlags();
+
+    start = millis();
 }
 
 void loop() {
     if (client.isConnected()) {
         digitalWrite(D7, LOW);
         client.loop();
+	
+	end = millis();
+	if(end - start > 60000) {
+		start = millis();		
 
-	char humid_buff[64];
-	snprintf(humid_buff, sizeof humid_buff, "%f", sensor.getRH());
-	client.publish("outTopic/humidity", humid_buff);
+		char humid_buff[64];
+		snprintf(humid_buff, sizeof humid_buff, "%f", sensor.getRH());
+		client.publish("outTopic/humidity", humid_buff);
 
-	char tempf_buff[64];
-	snprintf(tempf_buff, sizeof tempf_buff, "%f", sensor.getTempF());
-	client.publish("outTopic/tempf", tempf_buff);
+		char tempf_buff[64];
+		snprintf(tempf_buff, sizeof tempf_buff, "%f", sensor.getTempF());
+		client.publish("outTopic/tempf", tempf_buff);
+	}
     } else {
-        digitalWrite(D7, HIGH);
-	client.connect("sparkclient");
+	connect();
     }
 }
