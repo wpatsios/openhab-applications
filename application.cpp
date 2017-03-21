@@ -2,7 +2,7 @@
 #include "WeatherShield.h"
 #include "application.h"
 
-SYSTEM_MODE(SEMI_AUTOMATIC);
+//SYSTEM_MODE(SEMI_AUTOMATIC);
 
 void callback(char* topic, byte* payload, unsigned int length);
 
@@ -13,11 +13,12 @@ void callback(char* topic, byte* payload, unsigned int length);
  * want to use domain name,
  * MQTT client(www.sample.com, 1883, callback);
  **/
-byte server[] = { 192,168,1,131 };
+byte server[] = { 192,168,1,125 };
 MQTT client(server, 1883, callback);
 
 Weather sensor;
 unsigned long start, end;
+bool enabled;
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -29,13 +30,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if (message.equals("RED")) { 
         RGB.color(255, 0, 0);
 	client.publish("outTopic/message", "00");
+	enabled=false;
     } else if (message.equals("GREEN")) {   
         RGB.color(0, 255, 0);
 	client.publish("outTopic/message", "01");
-    } else if (message.equals("BLUE")) {
-        RGB.color(0, 0, 255);
-    } else {    
-        RGB.color(255, 255, 255);
+	enabled=true;
     }
     delay(1000);
 }
@@ -52,8 +51,8 @@ void setup() {
     pinMode(D7, OUTPUT);
     RGB.control(true);
     
-    WiFi.on();
-    WiFi.connect();
+    //WiFi.on();
+    //WiFi.connect();
 	
     connect();
 
@@ -62,7 +61,11 @@ void setup() {
     sensor.setOversampleRate(7);
     sensor.enableEventFlags();
 
-    start = millis();
+    start = -0x80000000;
+
+    RGB.color(0, 255, 0);
+    client.publish("outTopic/message", "01");
+    enabled=true;
 }
 
 void loop() {
@@ -71,7 +74,7 @@ void loop() {
         client.loop();
 	
 	end = millis();
-	if(end - start > 60000) {
+	if(end - start > 60000 && enabled) {
 		start = millis();		
 
 		char humid_buff[64];
@@ -81,6 +84,9 @@ void loop() {
 		char tempf_buff[64];
 		snprintf(tempf_buff, sizeof tempf_buff, "%f", sensor.getTempF());
 		client.publish("outTopic/tempf", tempf_buff);
+	//fix buffer overflow after 1 month
+	} else if(end - start < 0) {
+		start=millis();
 	}
     } else {
 	connect();
