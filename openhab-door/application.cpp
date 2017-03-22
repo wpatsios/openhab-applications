@@ -1,8 +1,5 @@
-#include "MQTT.h"
-#include "WeatherShield.h"
+#include "applications/lib/MQTT.h"
 #include "application.h"
-
-//SYSTEM_MODE(SEMI_AUTOMATIC);
 
 void callback(char* topic, byte* payload, unsigned int length);
 
@@ -16,7 +13,6 @@ void callback(char* topic, byte* payload, unsigned int length);
 byte server[] = { 192,168,1,125 };
 MQTT client(server, 1883, callback);
 
-Weather sensor;
 unsigned long start, end;
 bool enabled;
 
@@ -43,23 +39,15 @@ void connect() {
     if(!client.isConnected()) {
 	digitalWrite(D7, HIGH);
 	client.connect("sparkclient");
-	client.subscribe("inTopic/message");
+	client.subscribe("inTopic/door_message");
     }
 }
 
 void setup() {
     pinMode(D7, OUTPUT);
     RGB.control(true);
-    
-    //WiFi.on();
-    //WiFi.connect();
-	
+    	
     connect();
-
-    sensor.begin();
-    sensor.setModeBarometer();
-    sensor.setOversampleRate(7);
-    sensor.enableEventFlags();
 
     start = -0x80000000;
 
@@ -77,13 +65,6 @@ void loop() {
 	if(end - start > 60000 && enabled) {
 		start = millis();		
 
-		char humid_buff[64];
-		snprintf(humid_buff, sizeof humid_buff, "%f", sensor.getRH());
-		client.publish("outTopic/humidity", humid_buff);
-
-		char tempf_buff[64];
-		snprintf(tempf_buff, sizeof tempf_buff, "%f", sensor.getTempF());
-		client.publish("outTopic/tempf", tempf_buff);
 	//fix buffer overflow after 1 month
 	} else if(end - start < 0) {
 		start=millis();

@@ -1,5 +1,5 @@
-#include "../lib/MQTT.h"
-#include "../lib/WeatherShield.h"
+#include "applications/lib/MQTT.h"
+#include "applications/lib/WeatherShield.h"
 #include "application.h"
 
 //SYSTEM_MODE(SEMI_AUTOMATIC);
