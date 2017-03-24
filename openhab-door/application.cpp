@@ -13,8 +13,9 @@ void callback(char* topic, byte* payload, unsigned int length);
 byte server[] = { 192,168,1,125 };
 MQTT client(server, 1883, callback);
 
-unsigned long start, end;
 bool enabled;
+
+int laser = D6;
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -28,7 +29,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 	client.publish("outTopic/message", "00");
 	enabled=false;
     } else if (message.equals("GREEN")) {   
-        RGB.color(0, 255, 0);
 	client.publish("outTopic/message", "01");
 	enabled=true;
     }
@@ -39,17 +39,17 @@ void connect() {
     if(!client.isConnected()) {
 	digitalWrite(D7, HIGH);
 	client.connect("sparkclient");
-	client.subscribe("inTopic/door_message");
+	client.subscribe("inTopic/message");
     }
 }
 
 void setup() {
     pinMode(D7, OUTPUT);
+    pinMode(laser, OUTPUT);	
+
     RGB.control(true);
     	
     connect();
-
-    start = -0x80000000;
 
     RGB.color(0, 255, 0);
     client.publish("outTopic/message", "01");
@@ -61,13 +61,21 @@ void loop() {
         digitalWrite(D7, LOW);
         client.loop();
 	
-	end = millis();
-	if(end - start > 60000 && enabled) {
-		start = millis();		
+	if(enabled) {
+	    digitalWrite(laser, HIGH);
+		
+	    int analog = analogRead(0);
+	    char analog0_buff[64];
+	    snprintf(analog0_buff, sizeof analog0_buff, "%i", analog);
 
-	//fix buffer overflow after 1 month
-	} else if(end - start < 0) {
-		start=millis();
+	    client.publish("outTopic/analog0", analog0_buff);
+	    if(analog > 1400) {
+		RGB.color(255,255,0);
+	    } else {
+	    	RGB.color(0,255,0);
+	    }
+	} else { 
+	    digitalWrite(laser, LOW);
 	}
     } else {
 	connect();
