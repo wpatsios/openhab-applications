@@ -65,12 +65,13 @@ void loop() {
 	    digitalWrite(laser, HIGH);
 		
 	    int analog = analogRead(0);
+	    int analog2 = analogRead(1);
 	    char analog0_buff[64];
-	    snprintf(analog0_buff, sizeof analog0_buff, "%i", analog);
+	    snprintf(analog0_buff, sizeof analog0_buff, "%i", analog2);
 
 	    client.publish("outTopic/analog0", analog0_buff);
-	    if(analog > 1400) {
-		RGB.color(255,255,0);
+	    if(analog > 1400 && analog2 > 3950) {
+		RGB.color(255,0,255);
 	    } else {
 	    	RGB.color(0,255,0);
 	    }
