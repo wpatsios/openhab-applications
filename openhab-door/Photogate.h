@@ -1,14 +1,7 @@
-
 #ifndef PHOTOGATE_H
 #define PHOTOGATE_H
 
-#define RGB_RED 255,0,0
-#define RGB_GREEN 0,255,0
-#define RGB_BLUE 0,0,255
-#define RGB_CYAN 255,255,0
-#define RGB_MAGENTA 255,0,255
-#define RGB_YELLOW 0,255,255
-#define RGB_BLACK 0,0,0
+#include "applications/lib/RGBColor.h"
 
 class Photogate {
 public:
@@ -17,9 +10,11 @@ public:
 	void enable();
 	void disable();
 	void toggle();
+	bool isEnabled();
 
 	void callibrate();
 	bool isBroken();
+	int getPhotoAnalog();
 		
 private:
 	unsigned int laser;

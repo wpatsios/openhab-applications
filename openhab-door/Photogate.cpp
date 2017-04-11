@@ -29,6 +29,10 @@ void Photogate::toggle() {
 	}
 }
 
+bool Photogate::isEnabled() {
+	return status_on;
+}
+
 void Photogate::callibrate() {
 	normal_lighting = (analogRead(photores)+99)/100*100;	
 }
@@ -38,4 +42,8 @@ bool Photogate::isBroken() {
 		return false;
 	}
 	return true;
+}
+
+int Photogate::getPhotoAnalog() {
+	return analogRead(photores);
 }

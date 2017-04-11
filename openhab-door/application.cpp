@@ -1,4 +1,5 @@
 #include "applications/lib/MQTT.h"
+#include "Photogate.h"
 #include "application.h"
 
 void callback(char* topic, byte* payload, unsigned int length);
@@ -10,12 +11,15 @@ void callback(char* topic, byte* payload, unsigned int length);
  * want to use domain name,
  * MQTT client(www.sample.com, 1883, callback);
  **/
-byte server[] = { 192,168,1,125 };
+byte server[] = { 192,168,1,107 };
 MQTT client(server, 1883, callback);
 
 bool enabled;
+int peops = 0;
+unsigned long start, end;
 
-int laser = D6;
+Photogate pg1(D6, 1);
+Photogate pg2(D4, 0);
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -25,7 +29,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     String message(p);
 
     if (message.equals("RED")) { 
-        RGB.color(255, 0, 0);
+	pg1.disable();
 	client.publish("outTopic/message", "00");
 	enabled=false;
     } else if (message.equals("GREEN")) {   
@@ -44,39 +48,78 @@ void connect() {
 }
 
 void setup() {
-    pinMode(D7, OUTPUT);
-    pinMode(laser, OUTPUT);	
-
     RGB.control(true);
     	
     connect();
 
-    RGB.color(0, 255, 0);
+    pg1.enable();
+    pg2.enable();
+	
+    pg1.callibrate();
+    pg2.callibrate();
+
+    start = -0x80000000;
+
     client.publish("outTopic/message", "01");
     enabled=true;
 }
+
+bool pg1_prev = true;
+bool pg2_prev = true;
+
+#define PHTO_ID_1 0x01
+#define PHTO_ID_2 0x02
+
+int waitFor = 0;
 
 void loop() {
     if (client.isConnected()) {
         digitalWrite(D7, LOW);
         client.loop();
 	
-	if(enabled) {
-	    digitalWrite(laser, HIGH);
-		
-	    int analog = analogRead(0);
-	    int analog2 = analogRead(1);
-	    char analog0_buff[64];
-	    snprintf(analog0_buff, sizeof analog0_buff, "%i", analog2);
-
-	    client.publish("outTopic/analog0", analog0_buff);
-	    if(analog > 1400 && analog2 > 3950) {
-		RGB.color(255,0,255);
-	    } else {
-	    	RGB.color(0,255,0);
+	end = millis();
+	if(end - start > 100  && enabled) {
+	    start = millis();
+	    
+	    if(!pg1.isEnabled()) {
+		pg1.enable();
+		pg2.enable();
 	    }
-	} else { 
-	    digitalWrite(laser, LOW);
+		
+	    char analog0_buff[64];
+	    snprintf(analog0_buff, sizeof analog0_buff, "%i", pg2.getPhotoAnalog());
+
+	 
+	    
+	    client.publish("outTopic/d", analog0_buff);
+
+	    if(waitFor == PHTO_ID_2 && pg2.isBroken()) {
+		peops++;
+		waitFor = 0;
+	    } else if(waitFor == PHTO_ID_1 && pg1.isBroken()) {
+		peops--;
+		waitFor = 0;
+	    } else if(waitFor == 0) {
+		if(!pg1_prev && pg1.isBroken()) {
+	       	    RGB.color(RGB_MAGENTA);
+		    waitFor = PHTO_ID_2;
+		} else if(!pg2_prev && pg2.isBroken()) {
+		    RGB.color(RGB_YELLOW);
+	     	    waitFor = PHTO_ID_1;
+		} 
+	    }
+	    
+	    char peop_buff[64];
+	    snprintf(peop_buff, sizeof peop_buff, "%i", peops);
+	    client.publish("outTopic/analog0", peop_buff);
+	    
+	    pg1_prev = pg1.isBroken();
+	    pg2_prev = pg2.isBroken();
+	} else if(end - start < 0) {
+	    start=millis();
+	} else {
+	    //pg1.disable();
+	    //pg2.disable();
 	}
     } else {
 	connect();
