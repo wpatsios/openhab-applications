@@ -22,6 +22,6 @@ private:
 	
 	bool status_on = false;
 
-	int normal_lighting;
+	int normal_lighting = 100;
 }; 
 #endif

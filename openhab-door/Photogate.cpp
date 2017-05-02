@@ -46,4 +46,5 @@ bool Photogate::isBroken() {
 
 int Photogate::getPhotoAnalog() {
 	return analogRead(photores);
+//	return normal_lighting;
 }

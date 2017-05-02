@@ -1,9 +1,10 @@
 #include "applications/lib/MQTT.h"
 #include "Photogate.h"
+#include "stopwatch.h"
 #include "application.h"
 
 void callback(char* topic, byte* payload, unsigned int length);
-
+void publish(const char* topic, int num);
 /**
  * if want to use IP address,
  * byte server[] = { XXX,XXX,XXX,XXX };
@@ -30,6 +31,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     if (message.equals("RED")) { 
 	pg1.disable();
+	pg2.disable();
 	client.publish("outTopic/message", "00");
 	enabled=false;
     } else if (message.equals("GREEN")) {   
@@ -52,11 +54,8 @@ void setup() {
     	
     connect();
 
-    pg1.enable();
-    pg2.enable();
-	
-    pg1.callibrate();
-    pg2.callibrate();
+    //pg1.enable();
+    //pg2.enable();
 
     start = -0x80000000;
 
@@ -67,10 +66,11 @@ void setup() {
 bool pg1_prev = true;
 bool pg2_prev = true;
 
-#define PHTO_ID_1 0x01
-#define PHTO_ID_2 0x02
+#define PHTO_ID_1 1
+#define PHTO_ID_2 2
 
 int waitFor = 0;
+Stopwatch timeout;
 
 void loop() {
     if (client.isConnected()) {
@@ -78,40 +78,47 @@ void loop() {
         client.loop();
 	
 	end = millis();
-	if(end - start > 100  && enabled) {
+	if(end - start > 10  && enabled) {
 	    start = millis();
 	    
 	    if(!pg1.isEnabled()) {
+    		pg1.callibrate();
+    		pg2.callibrate();
 		pg1.enable();
 		pg2.enable();
 	    }
 		
-	    char analog0_buff[64];
-	    snprintf(analog0_buff, sizeof analog0_buff, "%i", pg2.getPhotoAnalog());
-
-	 
-	    
-	    client.publish("outTopic/d", analog0_buff);
+	    //publish("outTopic/d1", pg2.isBroken());
+	    //publish("outTopic/d2", pg1.isBroken());
 
 	    if(waitFor == PHTO_ID_2 && pg2.isBroken()) {
 		peops++;
 		waitFor = 0;
+		RGB.color(RGB_RED);
+		timeout.stop();
+		publish("outTopic/peops", peops);
 	    } else if(waitFor == PHTO_ID_1 && pg1.isBroken()) {
 		peops--;
 		waitFor = 0;
+		RGB.color(RGB_BLUE);
+		timeout.stop();
+		publish("outTopic/peops", peops);
 	    } else if(waitFor == 0) {
 		if(!pg1_prev && pg1.isBroken()) {
 	       	    RGB.color(RGB_MAGENTA);
 		    waitFor = PHTO_ID_2;
 		} else if(!pg2_prev && pg2.isBroken()) {
-		    RGB.color(RGB_YELLOW);
+		    RGB.color(RGB_CYAN);
 	     	    waitFor = PHTO_ID_1;
 		} 
+	    } else if(waitFor != 0 && !timeout.isRunning()) {
+		timeout.start();
+		timeout.reset();
+	    } else if(timeout.isRunning() && timeout.getTimeElapsed() > 1000) {
+		waitFor = 0;
+		RGB.color(RGB_GREEN);
+		timeout.stop();
 	    }
-	    
-	    char peop_buff[64];
-	    snprintf(peop_buff, sizeof peop_buff, "%i", peops);
-	    client.publish("outTopic/analog0", peop_buff);
 	    
 	    pg1_prev = pg1.isBroken();
 	    pg2_prev = pg2.isBroken();
@@ -124,4 +131,10 @@ void loop() {
     } else {
 	connect();
     }
+}
+
+void publish(const char* topic, int num) {
+    char buff[64];
+    snprintf(buff, sizeof buff, "%i", num);
+    client.publish(topic, buff);
 }
