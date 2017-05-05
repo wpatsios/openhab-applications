@@ -1,4 +1,4 @@
-#include "Photogate.h"
+#include "photogate.h"
 #include "application.h"
 
 Photogate::Photogate(unsigned int dc_laser_port, unsigned int ac_photores_port) {

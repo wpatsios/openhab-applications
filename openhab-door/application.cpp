@@ -1,5 +1,5 @@
 #include "applications/lib/MQTT.h"
-#include "Photogate.h"
+#include "photogate.h"
 #include "stopwatch.h"
 #include "application.h"
 
@@ -114,7 +114,7 @@ void loop() {
 	    } else if(waitFor != 0 && !timeout.isRunning()) {
 		timeout.start();
 		timeout.reset();
-	    } else if(timeout.isRunning() && timeout.getTimeElapsed() > 1000) {
+	    } else if(timeout.isRunning() && timeout.getTimeElapsed() > 500) {
 		waitFor = 0;
 		RGB.color(RGB_GREEN);
 		timeout.stop();
@@ -124,9 +124,6 @@ void loop() {
 	    pg2_prev = pg2.isBroken();
 	} else if(end - start < 0) {
 	    start=millis();
-	} else {
-	    //pg1.disable();
-	    //pg2.disable();
 	}
     } else {
 	connect();
