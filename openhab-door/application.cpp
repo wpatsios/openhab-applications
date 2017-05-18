@@ -12,7 +12,7 @@ void publish(const char* topic, int num);
  * want to use domain name,
  * MQTT client(www.sample.com, 1883, callback);
  **/
-byte server[] = { 192,168,1,107 };
+byte server[] = { 192,168,1,133 };
 MQTT client(server, 1883, callback);
 
 bool enabled;
@@ -32,10 +32,10 @@ void callback(char* topic, byte* payload, unsigned int length) {
     if (message.equals("RED")) { 
 	pg1.disable();
 	pg2.disable();
-	client.publish("outTopic/message", "00");
+	client.publish("outTopic/doorStat", "00");
 	enabled=false;
     } else if (message.equals("GREEN")) {   
-	client.publish("outTopic/message", "01");
+	client.publish("outTopic/doorStat", "01");
 	enabled=true;
     }
     delay(1000);
@@ -45,7 +45,7 @@ void connect() {
     if(!client.isConnected()) {
 	digitalWrite(D7, HIGH);
 	client.connect("sparkclient");
-	client.subscribe("inTopic/message");
+	client.subscribe("inTopic/doorStat");
     }
 }
 
@@ -59,7 +59,7 @@ void setup() {
 
     start = -0x80000000;
 
-    client.publish("outTopic/message", "01");
+    client.publish("outTopic/doorStat", "01");
     enabled=true;
 }
 
@@ -78,7 +78,7 @@ void loop() {
         client.loop();
 	
 	end = millis();
-	if(end - start > 10  && enabled) {
+	if(end - start > 100  && enabled) {
 	    start = millis();
 	    
 	    if(!pg1.isEnabled()) {

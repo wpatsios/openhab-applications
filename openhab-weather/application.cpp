@@ -13,12 +13,13 @@ void callback(char* topic, byte* payload, unsigned int length);
  * want to use domain name,
  * MQTT client(www.sample.com, 1883, callback);
  **/
-byte server[] = { 192,168,1,125 };
+byte server[] = { 192,168,1,133 };
 MQTT client(server, 1883, callback);
 
 Weather sensor;
 unsigned long start, end;
 bool enabled;
+bool cloud = true;
 
 // recieve message
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -29,11 +30,11 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     if (message.equals("RED")) { 
         RGB.color(255, 0, 0);
-	client.publish("outTopic/message", "00");
+	client.publish("outTopic/weatStat", "00");
 	enabled=false;
     } else if (message.equals("GREEN")) {   
         RGB.color(0, 255, 0);
-	client.publish("outTopic/message", "01");
+	client.publish("outTopic/weatStat", "01");
 	enabled=true;
     }
     delay(1000);
@@ -42,8 +43,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
 void connect() {
     if(!client.isConnected()) {
 	digitalWrite(D7, HIGH);
-	client.connect("sparkclient");
-	client.subscribe("inTopic/message");
+	client.connect("w_sparkclient");
+	client.subscribe("inTopic/weatStat");
+    }
+
+    if(cloud) {
+	//Particle.connect();
     }
 }
 
@@ -61,10 +66,10 @@ void setup() {
     sensor.setOversampleRate(7);
     sensor.enableEventFlags();
 
-    start = -0x80000000;
+    start = 0x80000000;
 
     RGB.color(0, 255, 0);
-    client.publish("outTopic/message", "01");
+    client.publish("outTopic/weatStat", "01");
     enabled=true;
 }
 
